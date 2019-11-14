@@ -2,6 +2,8 @@
 #include "prometheus/counter.h"
 #include "prometheus/summary.h"
 
+#include "proxygen/httpserver/ResponseBuilder.h"
+
 #include <cstring>
 #include <iterator>
 
@@ -39,100 +41,100 @@ MetricsHandler::MetricsHandler(
           {}, Summary::Quantiles{{0.5, 0.05}, {0.9, 0.01}, {0.99, 0.001}})) {}
 
 #ifdef HAVE_ZLIB
-static bool IsEncodingAccepted(struct mg_connection* conn,
-                               const char* encoding) {
-  auto accept_encoding = mg_get_header(conn, "Accept-Encoding");
-  if (!accept_encoding) {
-    return false;
-  }
-  return std::strstr(accept_encoding, encoding) != nullptr;
-}
+//static bool IsEncodingAccepted(struct mg_connection* conn,
+                               //const char* encoding) {
+  //auto accept_encoding = mg_get_header(conn, "Accept-Encoding");
+  //if (!accept_encoding) {
+    //return false;
+  //}
+  //return std::strstr(accept_encoding, encoding) != nullptr;
+//}
 
-static std::vector<Byte> GZipCompress(const std::string& input) {
-  auto zs = z_stream{};
-  auto windowSize = 16 + MAX_WBITS;
-  auto memoryLevel = 9;
+//static std::vector<Byte> GZipCompress(const std::string& input) {
+  //auto zs = z_stream{};
+  //auto windowSize = 16 + MAX_WBITS;
+  //auto memoryLevel = 9;
 
-  if (deflateInit2(&zs, Z_DEFAULT_COMPRESSION, Z_DEFLATED, windowSize,
-                   memoryLevel, Z_DEFAULT_STRATEGY) != Z_OK) {
-    return {};
-  }
+  //if (deflateInit2(&zs, Z_DEFAULT_COMPRESSION, Z_DEFLATED, windowSize,
+                   //memoryLevel, Z_DEFAULT_STRATEGY) != Z_OK) {
+    //return {};
+  //}
 
-  zs.next_in = (Bytef*)input.data();
-  zs.avail_in = input.size();
+  //zs.next_in = (Bytef*)input.data();
+  //zs.avail_in = input.size();
 
-  int ret;
-  std::vector<Byte> output;
-  output.reserve(input.size() / 2u);
+  //int ret;
+  //std::vector<Byte> output;
+  //output.reserve(input.size() / 2u);
 
-  do {
-    static const auto outputBytesPerRound = std::size_t{32768};
+  //do {
+    //static const auto outputBytesPerRound = std::size_t{32768};
 
-    zs.avail_out = outputBytesPerRound;
-    output.resize(zs.total_out + zs.avail_out);
-    zs.next_out = reinterpret_cast<Bytef*>(output.data() + zs.total_out);
+    //zs.avail_out = outputBytesPerRound;
+    //output.resize(zs.total_out + zs.avail_out);
+    //zs.next_out = reinterpret_cast<Bytef*>(output.data() + zs.total_out);
 
-    ret = deflate(&zs, Z_FINISH);
+    //ret = deflate(&zs, Z_FINISH);
 
-    output.resize(zs.total_out);
-  } while (ret == Z_OK);
+    //output.resize(zs.total_out);
+  //} while (ret == Z_OK);
 
-  deflateEnd(&zs);
+  //deflateEnd(&zs);
 
-  if (ret != Z_STREAM_END) {
-    return {};
-  }
+  //if (ret != Z_STREAM_END) {
+    //return {};
+  //}
 
-  return output;
-}
+  //return output;
+//}
 #endif
 
-static std::size_t WriteResponse(struct mg_connection* conn,
-                                 const std::string& body) {
-  mg_printf(conn,
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/plain\r\n");
+//static std::size_t WriteResponse(struct mg_connection* conn,
+                                 //const std::string& body) {
+  //mg_printf(conn,
+            //"HTTP/1.1 200 OK\r\n"
+            //"Content-Type: text/plain\r\n");
 
-#ifdef HAVE_ZLIB
-  auto acceptsGzip = IsEncodingAccepted(conn, "gzip");
+//#ifdef HAVE_ZLIB
+  //auto acceptsGzip = IsEncodingAccepted(conn, "gzip");
 
-  if (acceptsGzip) {
-    auto compressed = GZipCompress(body);
-    if (!compressed.empty()) {
-      mg_printf(conn,
-                "Content-Encoding: gzip\r\n"
-                "Content-Length: %lu\r\n\r\n",
-                static_cast<unsigned long>(compressed.size()));
-      mg_write(conn, compressed.data(), compressed.size());
-      return compressed.size();
-    }
-  }
-#endif
+  //if (acceptsGzip) {
+    //auto compressed = GZipCompress(body);
+    //if (!compressed.empty()) {
+      //mg_printf(conn,
+                //"Content-Encoding: gzip\r\n"
+                //"Content-Length: %lu\r\n\r\n",
+                //static_cast<unsigned long>(compressed.size()));
+      //mg_write(conn, compressed.data(), compressed.size());
+      //return compressed.size();
+    //}
+  //}
+//#endif
 
-  mg_printf(conn, "Content-Length: %lu\r\n\r\n",
-            static_cast<unsigned long>(body.size()));
-  mg_write(conn, body.data(), body.size());
-  return body.size();
-}
+  //mg_printf(conn, "Content-Length: %lu\r\n\r\n",
+            //static_cast<unsigned long>(body.size()));
+  //mg_write(conn, body.data(), body.size());
+  //return body.size();
+//}
 
-bool MetricsHandler::handleGet(CivetServer*, struct mg_connection* conn) {
-  auto start_time_of_request = std::chrono::steady_clock::now();
+//bool MetricsHandler::handleGet(CivetServer*, struct mg_connection* conn) {
+  //auto start_time_of_request = std::chrono::steady_clock::now();
 
-  auto metrics = CollectMetrics();
+  //auto metrics = CollectMetrics();
 
-  auto serializer = std::unique_ptr<Serializer>{new TextSerializer()};
+  //auto serializer = std::unique_ptr<Serializer>{new TextSerializer()};
 
-  auto bodySize = WriteResponse(conn, serializer->Serialize(metrics));
+  //auto bodySize = WriteResponse(conn, serializer->Serialize(metrics));
 
-  auto stop_time_of_request = std::chrono::steady_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
-      stop_time_of_request - start_time_of_request);
-  request_latencies_.Observe(duration.count());
+  //auto stop_time_of_request = std::chrono::steady_clock::now();
+  //auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+      //stop_time_of_request - start_time_of_request);
+  //request_latencies_.Observe(duration.count());
 
-  bytes_transferred_.Increment(bodySize);
-  num_scrapes_.Increment();
-  return true;
-}
+  //bytes_transferred_.Increment(bodySize);
+  //num_scrapes_.Increment();
+  //return true;
+//}
 std::vector<MetricFamily> MetricsHandler::CollectMetrics() const {
   auto collected_metrics = std::vector<MetricFamily>{};
 
@@ -150,5 +152,51 @@ std::vector<MetricFamily> MetricsHandler::CollectMetrics() const {
 
   return collected_metrics;
 }
+
+/// Proxygen Handler
+void MetricsHandler::onRequest(std::unique_ptr<proxygen::HTTPMessage> headers) noexcept {
+  if (headers->getMethod().value() != proxygen::HTTPMethod::GET) {
+      // Unsupported method
+      err_ = 405;
+      err_msg_ = "Method Not Allowed";
+  }
+}
+
+void MetricsHandler::onBody(std::unique_ptr<folly::IOBuf> body) noexcept {
+
+}
+
+void MetricsHandler::onUpgrade(proxygen::UpgradeProtocol prot) noexcept {
+
+}
+
+void MetricsHandler::onEOM() noexcept {
+  // Handle error
+  switch (err_) {
+      case 405:
+          proxygen::ResponseBuilder(downstream_)
+              .status(err_, err_msg_)
+              .sendWithEOM();
+          return;
+      default:
+          break;
+  }
+
+  // Response metrics
+  proxygen::ResponseBuilder(downstream_)
+      .status(200, "Ok")
+      .body("Metrics")  // TODO(shylock) the real metrics
+      .sendWithEOM();
+}
+
+void MetricsHandler::requestComplete() noexcept {
+  delete this;
+}
+
+void MetricsHandler::onError(proxygen::ProxygenError err) noexcept {
+//  LOG(WARNING) << "Get metrics error!";
+  delete this;
+}
+
 }  // namespace detail
 }  // namespace prometheus

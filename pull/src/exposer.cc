@@ -11,17 +11,24 @@
 
 namespace prometheus {
 
-Exposer::Exposer(const std::string& bind_address, const std::string& uri,
+
+void ProxygenServer::addHandler(const std::string& url, handler_gen_type&& handler) {
+  handlersGen_->emplace(url, handler);
+}
+
+void ProxygenServer::removeHandler(const std::string& url) {
+  // Do nothing in proxygen
+}
+
+Exposer::Exposer(Server* s, const std::string& uri,
                  const std::size_t num_threads)
-    : server_(new CivetServer{std::vector<std::string>{
-          "listening_ports", bind_address, "num_threads",
-          std::to_string(num_threads)}}),
+    : server_(s),
       exposer_registry_(std::make_shared<Registry>()),
-      metrics_handler_(
-          new detail::MetricsHandler{collectables_, *exposer_registry_}),
       uri_(uri) {
   RegisterCollectable(exposer_registry_);
-  server_->addHandler(uri, metrics_handler_.get());
+  server_->addHandler(uri, [this](){
+    return new detail::MetricsHandler(collectables_, *exposer_registry_);
+  });
 }
 
 Exposer::~Exposer() { server_->removeHandler(uri_); }

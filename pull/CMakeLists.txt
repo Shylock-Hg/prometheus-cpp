@@ -1,4 +1,14 @@
 
+if("${NEBULA_THIRDPARTY_ROOT}" STREQUAL "")
+    SET(NEBULA_THIRDPARTY_ROOT "/opt/nebula/third-party")
+endif()
+
+include_directories(SYSTEM ${NEBULA_THIRDPARTY_ROOT}/include)
+link_directories(
+    ${NEBULA_THIRDPARTY_ROOT}/lib
+    ${NEBULA_THIRDPARTY_ROOT}/lib64
+)
+
 if(USE_THIRDPARTY_LIBRARIES)
   find_package(civetweb-3rdparty CONFIG REQUIRED)
 else()
