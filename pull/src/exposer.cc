@@ -6,7 +6,7 @@
 
 #include "prometheus/client_metric.h"
 
-#include "CivetServer.h"
+//#include "CivetServer.h"
 #include "handler.h"
 
 namespace prometheus {

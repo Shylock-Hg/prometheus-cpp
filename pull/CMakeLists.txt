@@ -9,11 +9,11 @@ link_directories(
     ${NEBULA_THIRDPARTY_ROOT}/lib64
 )
 
-if(USE_THIRDPARTY_LIBRARIES)
-  find_package(civetweb-3rdparty CONFIG REQUIRED)
-else()
-  find_package(civetweb REQUIRED)
-endif()
+#if(USE_THIRDPARTY_LIBRARIES)
+  #find_package(civetweb-3rdparty CONFIG REQUIRED)
+#else()
+  #find_package(civetweb REQUIRED)
+#endif()
 
 if(ENABLE_COMPRESSION)
   find_package(ZLIB REQUIRED)
@@ -23,7 +23,7 @@ add_library(pull
   src/exposer.cc
   src/handler.cc
   src/handler.h
-  $<$<BOOL:${USE_THIRDPARTY_LIBRARIES}>:$<TARGET_OBJECTS:civetweb>>
+#  $<$<BOOL:${USE_THIRDPARTY_LIBRARIES}>:$<TARGET_OBJECTS:civetweb>>
 )
 
 add_library(${PROJECT_NAME}::pull ALIAS pull)
@@ -42,8 +42,8 @@ target_include_directories(pull
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
-  PRIVATE
-    ${CIVETWEB_INCLUDE_DIRS}
+#  PRIVATE
+#    ${CIVETWEB_INCLUDE_DIRS}
 )
 
 target_compile_definitions(pull
