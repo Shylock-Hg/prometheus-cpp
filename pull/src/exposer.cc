@@ -20,7 +20,7 @@ void ProxygenServer::removeHandler(const std::string& url) {
   // Do nothing in proxygen
 }
 
-Exposer::Exposer(Server* s, const std::string& uri,
+Exposer::Exposer(ProxygenServer* s, const std::string& uri,
                  const std::size_t num_threads)
     : server_(s),
       exposer_registry_(std::make_shared<Registry>()),

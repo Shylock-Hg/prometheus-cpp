@@ -45,17 +45,17 @@ public:
   //// proxygen
 //};
 
-class Server {
-public:
-  Server() = default;
-  virtual ~Server() = default;
+//class Server {
+//public:
+  //Server() = default;
+  //virtual ~Server() = default;
 
-  using handler_gen_type = std::function<Handler*()>;
-  using handlers_gen_type = std::unordered_map<std::string, handler_gen_type>;
+  //using handler_gen_type = std::function<Handler*()>;
+  //using handlers_gen_type = std::unordered_map<std::string, handler_gen_type>;
 
-  virtual void addHandler(const std::string&, handler_gen_type&&) = 0;
-  virtual void removeHandler(const std::string&) = 0;
-};
+  //virtual void addHandler(const std::string&, handler_gen_type&&) = 0;
+  //virtual void removeHandler(const std::string&) = 0;
+//};
 
 //class ProxygenHandler final : public Handler {
 //public:
@@ -67,19 +67,19 @@ public:
   //proxygen::RequestHandler* handler_;
 //};
 
-class ProxygenServer final : public Server {
+class ProxygenServer final {
 public:
   //ProxygenServer(proxygen::HTTPServer* s, proxygen::HTTPServerOptions* options)
     //: server_(s), options_(options) {}
-  //using handler_gen_type = std::function<Handler*()>;
-  //using handlers_gen_type = std::unordered_map<std::string, handler_gen_type>;
+  using handler_gen_type = std::function<proxygen::RequestHandler*()>;
+  using handlers_gen_type = std::unordered_map<std::string, handler_gen_type>;
 
   ProxygenServer(handlers_gen_type* gens) : handlersGen_(gens) {}
 
   /// Add/Remove handlers to the real Sever
   /// Add the HandlerFactory to proxygen server options
-  void addHandler(const std::string& url, handler_gen_type&& handler) override;
-  void removeHandler(const std::string& url) override;
+  void addHandler(const std::string& url, handler_gen_type&& handler);
+  void removeHandler(const std::string& url);
 
 private:
   //proxygen::HTTPServer* server_;
@@ -89,14 +89,14 @@ private:
 
 class PROMETHEUS_CPP_PULL_EXPORT Exposer {
  public:
-  explicit Exposer(Server* s,
+  explicit Exposer(ProxygenServer* s,
                    const std::string& uri = std::string("/metrics"),
                    const std::size_t num_threads = 2);
   ~Exposer();
   void RegisterCollectable(const std::weak_ptr<Collectable>& collectable);
 
  private:
-  std::unique_ptr<Server> server_;
+  std::unique_ptr<ProxygenServer> server_;
   std::vector<std::weak_ptr<Collectable>> collectables_;
   std::shared_ptr<Registry> exposer_registry_;
 //  std::unique_ptr<detail::MetricsHandler> metrics_handler_;
