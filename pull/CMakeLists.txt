@@ -1,3 +1,6 @@
+if("${NEBULA_THIRDPARTY_ROOT}" STREQUAL "")
+    SET(NEBULA_THIRDPARTY_ROOT "/opt/nebula/third-party")
+endif()
 
 if(USE_THIRDPARTY_LIBRARIES)
   find_package(civetweb-3rdparty CONFIG REQUIRED)
@@ -8,6 +11,12 @@ endif()
 if(ENABLE_COMPRESSION)
   find_package(ZLIB REQUIRED)
 endif()
+
+include_directories(SYSTEM ${NEBULA_THIRDPARTY_ROOT}/include ${CIVETWEB_INCLUDE_DIRS})
+link_directories(
+    ${NEBULA_THIRDPARTY_ROOT}/lib
+    ${NEBULA_THIRDPARTY_ROOT}/lib64
+)
 
 add_library(pull
   src/exposer.cc

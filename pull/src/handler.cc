@@ -12,6 +12,8 @@
 #include "prometheus/serializer.h"
 #include "prometheus/text_serializer.h"
 
+#include "proxygen/httpserver/ResponseBuilder.h"
+
 namespace prometheus {
 namespace detail {
 
@@ -150,5 +152,68 @@ std::vector<MetricFamily> MetricsHandler::CollectMetrics() const {
 
   return collected_metrics;
 }
+
+/// Proxygen Handler
+void MetricsHandler::onRequest(std::unique_ptr<proxygen::HTTPMessage> headers) noexcept {
+  if (headers->getMethod().value() != proxygen::HTTPMethod::GET) {
+      // Unsupported method
+      err_ = 405;
+      err_msg_ = "Method Not Allowed";
+  }
+}
+
+void MetricsHandler::onBody(std::unique_ptr<folly::IOBuf> body) noexcept {
+
+}
+
+void MetricsHandler::onUpgrade(proxygen::UpgradeProtocol prot) noexcept {
+
+}
+
+void MetricsHandler::onEOM() noexcept {
+  // Handle error
+  switch (err_) {
+      case 405:
+          proxygen::ResponseBuilder(downstream_)
+              .status(err_, err_msg_)
+              .sendWithEOM();
+          return;
+      default:
+          break;
+  }
+
+
+  auto start_time_of_request = std::chrono::steady_clock::now();
+
+  auto metrics = CollectMetrics();
+
+  auto serializer = std::unique_ptr<Serializer>{new TextSerializer()};
+
+  auto body = serializer->Serialize(metrics);
+
+  auto stop_time_of_request = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+      stop_time_of_request - start_time_of_request);
+  request_latencies_.Observe(duration.count());
+
+  bytes_transferred_.Increment(body.size());
+  num_scrapes_.Increment();
+
+  // Response metrics
+  proxygen::ResponseBuilder(downstream_)
+      .status(200, "Ok")
+      .body(body)  // TODO(shylock) the real metrics
+      .sendWithEOM();
+}
+
+void MetricsHandler::requestComplete() noexcept {
+  delete this;
+}
+
+void MetricsHandler::onError(proxygen::ProxygenError err) noexcept {
+//  LOG(WARNING) << "Get metrics error!";
+  delete this;
+}
+
 }  // namespace detail
 }  // namespace prometheus

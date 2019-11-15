@@ -11,7 +11,13 @@
 int main() {
   using namespace prometheus;
 
-  detail::CivetServerImpl server("127.0.0.1:8080", 2);
+
+  detail::ProxygenServerImpl server(
+    std::vector<proxygen::HTTPServer::IPConfig> {
+      {folly::SocketAddress("localhost", 8080, true), proxygen::HTTPServer::Protocol::HTTP},
+      {folly::SocketAddress("localhost", 8082, true), proxygen::HTTPServer::Protocol::HTTP2},
+    }
+  );
 
   // create an http server running on port 8080
   Exposer exposer(&server);
