@@ -182,10 +182,27 @@ void MetricsHandler::onEOM() noexcept {
           break;
   }
 
+
+  auto start_time_of_request = std::chrono::steady_clock::now();
+
+  auto metrics = CollectMetrics();
+
+  auto serializer = std::unique_ptr<Serializer>{new TextSerializer()};
+
+  auto body = serializer->Serialize(metrics);
+
+  auto stop_time_of_request = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+      stop_time_of_request - start_time_of_request);
+  request_latencies_.Observe(duration.count());
+
+  bytes_transferred_.Increment(body.size());
+  num_scrapes_.Increment();
+
   // Response metrics
   proxygen::ResponseBuilder(downstream_)
       .status(200, "Ok")
-      .body("Metrics")  // TODO(shylock) the real metrics
+      .body(body)  // TODO(shylock) the real metrics
       .sendWithEOM();
 }
 
