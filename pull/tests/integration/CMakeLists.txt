@@ -15,11 +15,12 @@ add_executable(sample_server_proxygen
 target_link_libraries(sample_server_proxygen
   PRIVATE
     ${PROJECT_NAME}::pull
+    $<$<BOOL:${USE_THIRDPARTY_LIBRARIES}>:folly>
     $<$<BOOL:${USE_THIRDPARTY_LIBRARIES}>:proxygenhttpserver>
     $<$<BOOL:${USE_THIRDPARTY_LIBRARIES}>:proxygenlib>
     $<$<BOOL:${USE_THIRDPARTY_LIBRARIES}>:glog>
-    $<$<BOOL:${USE_THIRDPARTY_LIBRARIES}>:folly>
     $<$<BOOL:${USE_THIRDPARTY_LIBRARIES}>:wangle>
+    $<$<BOOL:${USE_THIRDPARTY_LIBRARIES}>:folly>
     $<$<BOOL:${USE_THIRDPARTY_LIBRARIES}>:gflags>
     $<$<BOOL:${USE_THIRDPARTY_LIBRARIES}>:ssl>
     $<$<BOOL:${USE_THIRDPARTY_LIBRARIES}>:crypto>

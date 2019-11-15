@@ -8,11 +8,13 @@
 #include <prometheus/exposer.h>
 #include <prometheus/registry.h>
 
+#include <folly/SocketAddress.h>
+
 using namespace prometheus;
 
 class WebServiceHandlerFactory : public proxygen::RequestHandlerFactory {
 public:
-    explicit WebServiceHandlerFactory(Server::handlers_gen_type&& genMap) : handlerGenMap_(genMap) {}
+    explicit WebServiceHandlerFactory(ProxygenServer::handlers_gen_type&& genMap) : handlerGenMap_(genMap) {}
 
     void onServerStart(folly::EventBase*) noexcept override {
     }
@@ -38,7 +40,7 @@ public:
     }
 
 private:
-    Server::handlers_gen_type handlerGenMap_;
+    ProxygenServer::handlers_gen_type handlerGenMap_;
 };
 
 int main() {
@@ -47,8 +49,6 @@ int main() {
 
   ProxygenServer s(&handlerGenMap);
 
-  // create an http server running on port 8080
-//  Exposer exposer{"127.0.0.1:8080", "/metrics", 1};
   Exposer exposer{&s};
 
   proxygen::HTTPServerOptions options;
@@ -62,6 +62,17 @@ int main() {
 
   proxygen::HTTPServer server(std::move(options));
 
+  std::vector<proxygen::HTTPServer::IPConfig> IPs = {
+    {folly::SocketAddress("localhost", 9999, true), proxygen::HTTPServer::Protocol::HTTP},
+    {folly::SocketAddress("localhost", 9992, true), proxygen::HTTPServer::Protocol::HTTP2},
+  };
+
+  server.bind(IPs);
+
+  // Start HTTPServer mainloop in a separate thread
+  std::thread t([&] () {
+    server.start();
+  });
 
   // create a metrics registry with component=main labels applied to all its
   // metrics
@@ -87,5 +98,8 @@ int main() {
     // increment the counter by one (second)
     second_counter.Increment();
   }
+
+  t.join();
+
   return 0;
 }
