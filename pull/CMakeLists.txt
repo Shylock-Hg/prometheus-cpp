@@ -2,17 +2,17 @@ if("${NEBULA_THIRDPARTY_ROOT}" STREQUAL "")
     SET(NEBULA_THIRDPARTY_ROOT "/opt/nebula/third-party")
 endif()
 
-if(USE_THIRDPARTY_LIBRARIES)
-  find_package(civetweb-3rdparty CONFIG REQUIRED)
-else()
-  find_package(civetweb REQUIRED)
-endif()
+#if(USE_THIRDPARTY_LIBRARIES)
+  #find_package(civetweb-3rdparty CONFIG REQUIRED)
+#else()
+  #find_package(civetweb REQUIRED)
+#endif()
 
 if(ENABLE_COMPRESSION)
   find_package(ZLIB REQUIRED)
 endif()
 
-include_directories(SYSTEM ${NEBULA_THIRDPARTY_ROOT}/include ${CIVETWEB_INCLUDE_DIRS})
+include_directories(SYSTEM ${NEBULA_THIRDPARTY_ROOT}/include)
 link_directories(
     ${NEBULA_THIRDPARTY_ROOT}/lib
     ${NEBULA_THIRDPARTY_ROOT}/lib64
@@ -22,7 +22,7 @@ add_library(pull
   src/exposer.cc
   src/handler.cc
   src/handler.h
-  $<$<BOOL:${USE_THIRDPARTY_LIBRARIES}>:$<TARGET_OBJECTS:civetweb>>
+#  $<$<BOOL:${USE_THIRDPARTY_LIBRARIES}>:$<TARGET_OBJECTS:civetweb>>
 )
 
 add_library(${PROJECT_NAME}::pull ALIAS pull)
@@ -32,7 +32,7 @@ target_link_libraries(pull
     ${PROJECT_NAME}::core
   PRIVATE
     Threads::Threads
-    ${CIVETWEB_LIBRARIES}
+#    ${CIVETWEB_LIBRARIES}
     $<$<AND:$<BOOL:UNIX>,$<NOT:$<BOOL:APPLE>>>:rt>
     $<$<BOOL:${ENABLE_COMPRESSION}>:ZLIB::ZLIB>
 )
@@ -41,8 +41,8 @@ target_include_directories(pull
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
-  PRIVATE
-    ${CIVETWEB_INCLUDE_DIRS}
+#  PRIVATE
+#    ${CIVETWEB_INCLUDE_DIRS}
 )
 
 target_compile_definitions(pull

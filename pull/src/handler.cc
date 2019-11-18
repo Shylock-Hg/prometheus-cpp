@@ -38,8 +38,11 @@ MetricsHandler::MetricsHandler(
               .Help("Latencies of serving scrape requests, in microseconds")
               .Register(registry)),
       request_latencies_(request_latencies_family_.Add(
-          {}, Summary::Quantiles{{0.5, 0.05}, {0.9, 0.01}, {0.99, 0.001}})) {}
+          {}, Summary::Quantiles{{0.5, 0.05}, {0.9, 0.01}, {0.99, 0.001}})),
+      err_(200),
+      err_msg_("Ok") {}
 
+/*
 #ifdef HAVE_ZLIB
 static bool IsEncodingAccepted(struct mg_connection* conn,
                                const char* encoding) {
@@ -135,6 +138,7 @@ bool MetricsHandler::handleGet(CivetServer*, struct mg_connection* conn) {
   num_scrapes_.Increment();
   return true;
 }
+*/
 std::vector<MetricFamily> MetricsHandler::CollectMetrics() const {
   auto collected_metrics = std::vector<MetricFamily>{};
 
@@ -170,16 +174,14 @@ void MetricsHandler::onUpgrade(proxygen::UpgradeProtocol prot) noexcept {
 
 }
 
+// TODO(shylock) GZIP support
 void MetricsHandler::onEOM() noexcept {
   // Handle error
-  switch (err_) {
-      case 405:
-          proxygen::ResponseBuilder(downstream_)
-              .status(err_, err_msg_)
-              .sendWithEOM();
-          return;
-      default:
-          break;
+  if (err_ != 200) {
+    proxygen::ResponseBuilder(downstream_)
+        .status(err_, err_msg_)
+        .sendWithEOM();
+    return;
   }
 
 
@@ -201,8 +203,8 @@ void MetricsHandler::onEOM() noexcept {
 
   // Response metrics
   proxygen::ResponseBuilder(downstream_)
-      .status(200, "Ok")
-      .body(body)  // TODO(shylock) the real metrics
+      .status(err_, err_msg_)
+      .body(body)
       .sendWithEOM();
 }
 

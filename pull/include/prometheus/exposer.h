@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "CivetServer.h"
+//#include "CivetServer.h"
 #include "proxygen/httpserver/HTTPServer.h"
 
 #include "prometheus/collectable.h"
@@ -29,6 +29,7 @@ public:
                  Registry& registry) = 0;
 };
 
+/*
 class CivetServerImpl final : public Server {
 public:
   CivetServerImpl(const std::string& bind, const std::size_t num_threads);
@@ -41,6 +42,7 @@ private:
   std::unique_ptr<MetricsHandler> metrics_handler_;
   CivetServer server_;
 };
+*/
 
 class ProxygenServerImpl final : public Server {
 public:
@@ -75,6 +77,7 @@ private:
 
   std::vector<proxygen::HTTPServer::IPConfig> address_;
   std::unique_ptr<proxygen::HTTPServer> server_;
+  std::thread poller_;
 };
 
 }  // namespace detail

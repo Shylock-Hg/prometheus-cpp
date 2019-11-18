@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "CivetServer.h"
+//#include "CivetServer.h"
 #include "proxygen/httpserver/HTTPServer.h"
 #include "prometheus/counter.h"
 #include "prometheus/registry.h"
@@ -13,7 +13,7 @@ namespace prometheus {
 
 namespace detail {
 
-class Handler : public CivetHandler, public proxygen::RequestHandler {
+class Handler : /*public CivetHandler,*/ public proxygen::RequestHandler {
 public:
   Handler() = default;
   virtual ~Handler() = default;
@@ -24,7 +24,7 @@ class MetricsHandler final : public Handler {
   MetricsHandler(const std::vector<std::weak_ptr<Collectable>>& collectables,
                  Registry& registry);
 
-  bool handleGet(CivetServer* server, struct mg_connection* conn) override;
+//  bool handleGet(CivetServer* server, struct mg_connection* conn) override;
 
   // Proxygen
   void onRequest(std::unique_ptr<proxygen::HTTPMessage> headers) noexcept override;

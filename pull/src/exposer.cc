@@ -6,7 +6,7 @@
 
 #include "prometheus/client_metric.h"
 
-#include "CivetServer.h"
+//#include "CivetServer.h"
 #include "handler.h"
 
 namespace prometheus {
@@ -28,6 +28,7 @@ void Exposer::RegisterCollectable(
 
 namespace detail {
 
+/*
   CivetServerImpl::~CivetServerImpl() = default;
 
   CivetServerImpl::CivetServerImpl(const std::string& bind, const std::size_t num_threads) :
@@ -42,10 +43,14 @@ namespace detail {
     metrics_handler_.reset(new MetricsHandler(collectables, registry));
     server_.addHandler(path, metrics_handler_.get());
   }
+*/
 
 
   ProxygenServerImpl::ProxygenServerImpl(std::vector<proxygen::HTTPServer::IPConfig> address) : address_(address), server_(nullptr) {}
-  ProxygenServerImpl::~ProxygenServerImpl() = default;
+  ProxygenServerImpl::~ProxygenServerImpl() {
+    server_->stop();
+    poller_.join();
+  };
 
   void ProxygenServerImpl::start(std::string path, const std::vector<std::weak_ptr<Collectable>>& collectables,
                  Registry& registry) {
@@ -60,10 +65,9 @@ namespace detail {
     server_.reset(new proxygen::HTTPServer(std::move(options)));
 
     server_->bind(address_);
-    std::thread t([this]() {
+    poller_ = std::thread([this]() {
       server_->start();
     });
-    t.detach();
   }
 
   proxygen::RequestHandler* ProxygenServerImpl::HandlerFactory::onRequest(proxygen::RequestHandler*,
