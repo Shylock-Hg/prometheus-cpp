@@ -81,6 +81,14 @@ namespace detail {
 //        return new NotFoundHandler();
       return nullptr;
   }
+
+
+  void ProxygenRefServerImpl::start(std::string path, const std::vector<std::weak_ptr<Collectable>>& collectables,
+                 Registry& registry) {
+      gens_.emplace(path, [&]() {
+        return  dynamic_cast<proxygen::RequestHandler*> (new detail::MetricsHandler(collectables, registry));
+      });
+  }
 }
 
 

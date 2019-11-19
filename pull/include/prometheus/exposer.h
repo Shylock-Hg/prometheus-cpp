@@ -80,6 +80,21 @@ private:
   std::thread poller_;
 };
 
+class ProxygenRefServerImpl final : public Server {
+public:
+  using HandlerGen = std::unordered_map<std::string, std::function<proxygen::RequestHandler*()>>;
+  ProxygenRefServerImpl(HandlerGen& gens) : gens_(gens) {
+
+  }
+  ~ProxygenRefServerImpl() = default;
+
+  void start(std::string path, const std::vector<std::weak_ptr<Collectable>>& collectables,
+                 Registry& registry) override;
+
+private:
+  HandlerGen& gens_;
+};
+
 }  // namespace detail
 
 class PROMETHEUS_CPP_PULL_EXPORT Exposer {
