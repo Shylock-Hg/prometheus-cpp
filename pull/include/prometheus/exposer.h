@@ -21,12 +21,14 @@ namespace detail {
 class MetricsHandler;
 
 class Server {
-public:
+ public:
   Server() = default;
   virtual ~Server() = default;
 
-  virtual void start(std::string path, const std::vector<std::weak_ptr<Collectable>>& collectables,
-                 Registry& registry) = 0;
+  virtual void start(
+      std::string path,
+      const std::vector<std::weak_ptr<Collectable>>& collectables,
+      Registry& registry) = 0;
 };
 
 /*
@@ -35,8 +37,8 @@ public:
   CivetServerImpl(const std::string& bind, const std::size_t num_threads);
   ~CivetServerImpl();
 
-  void start(std::string path, const std::vector<std::weak_ptr<Collectable>>& collectables,
-                 Registry& registry) override;
+  void start(std::string path, const std::vector<std::weak_ptr<Collectable>>&
+collectables, Registry& registry) override;
 
 private:
   std::unique_ptr<MetricsHandler> metrics_handler_;
@@ -45,32 +47,31 @@ private:
 */
 
 class ProxygenServerImpl final : public Server {
-public:
+ public:
   ProxygenServerImpl(std::vector<proxygen::HTTPServer::IPConfig> address);
   ~ProxygenServerImpl();
 
-  void start(std::string path, const std::vector<std::weak_ptr<Collectable>>& collectables,
-                 Registry& registry) override;
+  void start(std::string path,
+             const std::vector<std::weak_ptr<Collectable>>& collectables,
+             Registry& registry) override;
 
-private:
+ private:
   class HandlerFactory final : public proxygen::RequestHandlerFactory {
-    public:
-    HandlerFactory(
-      const std::vector<std::weak_ptr<Collectable>>* collectables,
-      Registry* registry
-    ) : collectables_(collectables), registry_(registry) {}
+   public:
+    HandlerFactory(const std::vector<std::weak_ptr<Collectable>>* collectables,
+                   Registry* registry)
+        : collectables_(collectables), registry_(registry) {}
     ~HandlerFactory() = default;
 
-    void onServerStart(folly::EventBase*) noexcept override {
-    }
+    void onServerStart(folly::EventBase*) noexcept override {}
 
-    void onServerStop() noexcept override {
-    }
+    void onServerStop() noexcept override {}
 
-    proxygen::RequestHandler* onRequest(proxygen::RequestHandler*,
-                                        proxygen::HTTPMessage* msg) noexcept override;
+    proxygen::RequestHandler* onRequest(
+        proxygen::RequestHandler*,
+        proxygen::HTTPMessage* msg) noexcept override;
 
-  private:
+   private:
     const std::vector<std::weak_ptr<Collectable>>* collectables_;
     Registry* registry_;
   };
@@ -81,17 +82,18 @@ private:
 };
 
 class ProxygenRefServerImpl final : public Server {
-public:
-  using HandlerGen = std::unordered_map<std::string, std::function<proxygen::RequestHandler*()>>;
-  ProxygenRefServerImpl(HandlerGen& gens) : gens_(gens) {
-
-  }
+ public:
+  using HandlerGen =
+      std::unordered_map<std::string,
+                         std::function<proxygen::RequestHandler*()>>;
+  ProxygenRefServerImpl(HandlerGen& gens) : gens_(gens) {}
   ~ProxygenRefServerImpl() = default;
 
-  void start(std::string path, const std::vector<std::weak_ptr<Collectable>>& collectables,
-                 Registry& registry) override;
+  void start(std::string path,
+             const std::vector<std::weak_ptr<Collectable>>& collectables,
+             Registry& registry) override;
 
-private:
+ private:
   HandlerGen& gens_;
 };
 
@@ -99,8 +101,8 @@ private:
 
 class PROMETHEUS_CPP_PULL_EXPORT Exposer {
  public:
-  explicit Exposer(detail::Server* s, const std::string& uri = std::string("/metrics")
-                   );
+  explicit Exposer(detail::Server* s,
+                   const std::string& uri = std::string("/metrics"));
   ~Exposer();
   void RegisterCollectable(const std::weak_ptr<Collectable>& collectable);
 

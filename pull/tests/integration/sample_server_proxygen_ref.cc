@@ -13,38 +13,37 @@
 using namespace prometheus;
 
 class WebServiceHandlerFactory : public proxygen::RequestHandlerFactory {
-public:
-    explicit WebServiceHandlerFactory(detail::ProxygenRefServerImpl::HandlerGen&& genMap) : handlerGenMap_(genMap) {}
+ public:
+  explicit WebServiceHandlerFactory(
+      detail::ProxygenRefServerImpl::HandlerGen&& genMap)
+      : handlerGenMap_(genMap) {}
 
-    void onServerStart(folly::EventBase*) noexcept override {
+  void onServerStart(folly::EventBase*) noexcept override {}
+
+  void onServerStop() noexcept override {}
+
+  proxygen::RequestHandler* onRequest(
+      proxygen::RequestHandler*, proxygen::HTTPMessage* msg) noexcept override {
+    std::string path = msg->getPath();
+    if (path == "/") {
+      path = "/status";
+    }
+    //        VLOG(2) << "Got request \"" << path << "\"";
+    auto it = handlerGenMap_.find(path);
+    if (it != handlerGenMap_.end()) {
+      return it->second();
     }
 
-    void onServerStop() noexcept override {
-    }
+    // Unknown url path
+    //        return new NotFoundHandler();
+    return nullptr;
+  }
 
-    proxygen::RequestHandler* onRequest(proxygen::RequestHandler*,
-                                        proxygen::HTTPMessage* msg) noexcept override {
-        std::string path = msg->getPath();
-        if (path == "/") {
-            path = "/status";
-        }
-//        VLOG(2) << "Got request \"" << path << "\"";
-        auto it = handlerGenMap_.find(path);
-        if (it != handlerGenMap_.end()) {
-            return it->second();
-        }
-
-        // Unknown url path
-//        return new NotFoundHandler();
-        return nullptr;
-    }
-
-private:
-    detail::ProxygenRefServerImpl::HandlerGen handlerGenMap_;
+ private:
+  detail::ProxygenRefServerImpl::HandlerGen handlerGenMap_;
 };
 
 int main() {
-
   detail::ProxygenRefServerImpl::HandlerGen handlerGenMap;
 
   detail::ProxygenRefServerImpl s(handlerGenMap);
@@ -55,24 +54,25 @@ int main() {
   options.threads = static_cast<size_t>(2);
   options.idleTimeout = std::chrono::milliseconds(60000);
   options.enableContentCompression = false;
-  options.handlerFactories = proxygen::RequestHandlerChain()
-    .addThen<WebServiceHandlerFactory>(std::move(handlerGenMap))
-    .build();
+  options.handlerFactories =
+      proxygen::RequestHandlerChain()
+          .addThen<WebServiceHandlerFactory>(std::move(handlerGenMap))
+          .build();
   options.h2cEnabled = true;
 
   proxygen::HTTPServer server(std::move(options));
 
   std::vector<proxygen::HTTPServer::IPConfig> IPs = {
-    {folly::SocketAddress("localhost", 8080, true), proxygen::HTTPServer::Protocol::HTTP},
-    {folly::SocketAddress("localhost", 8082, true), proxygen::HTTPServer::Protocol::HTTP2},
+      {folly::SocketAddress("localhost", 8080, true),
+       proxygen::HTTPServer::Protocol::HTTP},
+      {folly::SocketAddress("localhost", 8082, true),
+       proxygen::HTTPServer::Protocol::HTTP2},
   };
 
   server.bind(IPs);
 
   // Start HTTPServer mainloop in a separate thread
-  std::thread t([&] () {
-    server.start();
-  });
+  std::thread t([&]() { server.start(); });
 
   // create a metrics registry with component=main labels applied to all its
   // metrics

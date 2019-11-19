@@ -158,32 +158,26 @@ std::vector<MetricFamily> MetricsHandler::CollectMetrics() const {
 }
 
 /// Proxygen Handler
-void MetricsHandler::onRequest(std::unique_ptr<proxygen::HTTPMessage> headers) noexcept {
+void MetricsHandler::onRequest(
+    std::unique_ptr<proxygen::HTTPMessage> headers) noexcept {
   if (headers->getMethod().value() != proxygen::HTTPMethod::GET) {
-      // Unsupported method
-      err_ = 405;
-      err_msg_ = "Method Not Allowed";
+    // Unsupported method
+    err_ = 405;
+    err_msg_ = "Method Not Allowed";
   }
 }
 
-void MetricsHandler::onBody(std::unique_ptr<folly::IOBuf> body) noexcept {
+void MetricsHandler::onBody(std::unique_ptr<folly::IOBuf> body) noexcept {}
 
-}
-
-void MetricsHandler::onUpgrade(proxygen::UpgradeProtocol prot) noexcept {
-
-}
+void MetricsHandler::onUpgrade(proxygen::UpgradeProtocol prot) noexcept {}
 
 // TODO(shylock) GZIP support
 void MetricsHandler::onEOM() noexcept {
   // Handle error
   if (err_ != 200) {
-    proxygen::ResponseBuilder(downstream_)
-        .status(err_, err_msg_)
-        .sendWithEOM();
+    proxygen::ResponseBuilder(downstream_).status(err_, err_msg_).sendWithEOM();
     return;
   }
-
 
   auto start_time_of_request = std::chrono::steady_clock::now();
 
@@ -208,12 +202,10 @@ void MetricsHandler::onEOM() noexcept {
       .sendWithEOM();
 }
 
-void MetricsHandler::requestComplete() noexcept {
-  delete this;
-}
+void MetricsHandler::requestComplete() noexcept { delete this; }
 
 void MetricsHandler::onError(proxygen::ProxygenError err) noexcept {
-//  LOG(WARNING) << "Get metrics error!";
+  //  LOG(WARNING) << "Get metrics error!";
   delete this;
 }
 

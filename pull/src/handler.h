@@ -4,17 +4,17 @@
 #include <vector>
 
 //#include "CivetServer.h"
-#include "proxygen/httpserver/HTTPServer.h"
 #include "prometheus/counter.h"
 #include "prometheus/registry.h"
 #include "prometheus/summary.h"
+#include "proxygen/httpserver/HTTPServer.h"
 
 namespace prometheus {
 
 namespace detail {
 
 class Handler : /*public CivetHandler,*/ public proxygen::RequestHandler {
-public:
+ public:
   Handler() = default;
   virtual ~Handler() = default;
 };
@@ -24,10 +24,11 @@ class MetricsHandler final : public Handler {
   MetricsHandler(const std::vector<std::weak_ptr<Collectable>>& collectables,
                  Registry& registry);
 
-//  bool handleGet(CivetServer* server, struct mg_connection* conn) override;
+  //  bool handleGet(CivetServer* server, struct mg_connection* conn) override;
 
   // Proxygen
-  void onRequest(std::unique_ptr<proxygen::HTTPMessage> headers) noexcept override;
+  void onRequest(
+      std::unique_ptr<proxygen::HTTPMessage> headers) noexcept override;
 
   void onBody(std::unique_ptr<folly::IOBuf> body) noexcept override;
 
