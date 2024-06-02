@@ -8,8 +8,8 @@ namespace detail {
 static const char CONTENT_TYPE[] =
     "Content-Type: text/plain; version=0.0.4; charset=utf-8";
 
-CurlWrapper::CurlWrapper(const std::string& username,
-                         const std::string& password) {
+CurlWrapper::CurlWrapper(std::function<void(CURL*)> presetupCurl)
+    : presetupCurl_(presetupCurl) {
   /* In windows, this will init the winsock stuff */
   auto error = curl_global_init(CURL_GLOBAL_ALL);
   if (error) {
@@ -22,13 +22,13 @@ CurlWrapper::CurlWrapper(const std::string& username,
     throw std::runtime_error("Cannot initialize easy curl!");
   }
 
+  if (presetupCurl_) {
+    presetupCurl_(curl_);  
+  }
+
   optHttpHeader_ = curl_slist_append(nullptr, CONTENT_TYPE);
   if (!optHttpHeader_) {
     throw std::runtime_error("Cannot append the header of the content type");
-  }
-
-  if (!username.empty()) {
-    auth_ = username + ":" + password;
   }
 }
 
@@ -39,7 +39,7 @@ CurlWrapper::~CurlWrapper() {
 }
 
 int CurlWrapper::performHttpRequest(HttpMethod method, const std::string& uri,
-                                    const std::string& body, long timeout) {
+                                    const std::string& body) {
   std::lock_guard<std::mutex> l(mutex_);
 
   curl_easy_reset(curl_);
@@ -47,16 +47,15 @@ int CurlWrapper::performHttpRequest(HttpMethod method, const std::string& uri,
 
   curl_easy_setopt(curl_, CURLOPT_HTTPHEADER, optHttpHeader_);
 
+  if (presetupCurl_) {
+    presetupCurl_(curl_);  
+  }
+
   if (!body.empty()) {
     curl_easy_setopt(curl_, CURLOPT_POSTFIELDSIZE, body.size());
     curl_easy_setopt(curl_, CURLOPT_POSTFIELDS, body.data());
   } else {
     curl_easy_setopt(curl_, CURLOPT_POSTFIELDSIZE, 0L);
-  }
-
-  if (!auth_.empty()) {
-    curl_easy_setopt(curl_, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-    curl_easy_setopt(curl_, CURLOPT_USERPWD, auth_.c_str());
   }
 
   switch (method) {
@@ -75,8 +74,6 @@ int CurlWrapper::performHttpRequest(HttpMethod method, const std::string& uri,
       curl_easy_setopt(curl_, CURLOPT_CUSTOMREQUEST, "DELETE");
       break;
   }
-
-  curl_easy_setopt(curl_, CURLOPT_TIMEOUT, timeout);
 
   auto curl_error = curl_easy_perform(curl_);
 

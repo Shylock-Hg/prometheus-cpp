@@ -1,5 +1,6 @@
 #include <curl/curl.h>
 
+#include <functional>
 #include <mutex>
 #include <string>
 
@@ -10,7 +11,7 @@ namespace detail {
 
 class CurlWrapper {
  public:
-  CurlWrapper(const std::string& username, const std::string& password);
+  CurlWrapper(std::function<void(CURL*)> presetupCurl);
 
   CurlWrapper(const CurlWrapper&) = delete;
   CurlWrapper(CurlWrapper&&) = delete;
@@ -20,14 +21,14 @@ class CurlWrapper {
   ~CurlWrapper();
 
   int performHttpRequest(HttpMethod method, const std::string& uri,
-                         const std::string& body, long timeout = 0L);
+                         const std::string& body = {});
   bool addHttpHeader(const std::string& header);
 
  private:
   CURL* curl_;
-  std::string auth_;
   std::mutex mutex_;
   curl_slist* optHttpHeader_;
+  std::function<void(CURL*)> presetupCurl_;
 };
 
 }  // namespace detail

@@ -1,6 +1,9 @@
 #pragma once
 
+#include <curl/curl.h>
+
 #include <chrono>
+#include <functional>
 #include <future>
 #include <memory>
 #include <mutex>
@@ -12,6 +15,7 @@
 #include "prometheus/detail/http_method.h"
 #include "prometheus/detail/push_export.h"
 #include "prometheus/labels.h"
+
 
 namespace prometheus {
 
@@ -25,6 +29,10 @@ class PROMETHEUS_CPP_PUSH_EXPORT Gateway {
           const std::string& jobname, const Labels& labels = {},
           const std::string& username = {}, const std::string& password = {},
           std::chrono::seconds timeout = {});
+
+  Gateway(const std::string& host, const std::string& port,
+          std::function<void(CURL*)> presetupCurl, const std::string& jobname,
+          const Labels& labels = {});
 
   Gateway(const Gateway&) = delete;
   Gateway(Gateway&&) = delete;
@@ -70,7 +78,6 @@ class PROMETHEUS_CPP_PUSH_EXPORT Gateway {
   std::string jobUri_;
   std::string labels_;
   std::unique_ptr<detail::CurlWrapper> curlWrapper_;
-  std::chrono::seconds timeout_;
   std::mutex mutex_;
 
   using CollectableEntry = std::pair<std::weak_ptr<Collectable>, std::string>;
